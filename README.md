@@ -1,6 +1,6 @@
 ---
 title: Laion Aesthetic Predictor
-emoji: 📚
+emoji: 🎨
 colorFrom: red
 colorTo: indigo
 sdk: gradio
