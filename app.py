@@ -61,13 +61,15 @@ def normalized(a, axis=-1, order=2):
 
 def load_models():
     model = MLP(768)
-    s = torch.load("sac+logos+ava1-l14-linearMSE.pth")
-
-    model.load_state_dict(s)
-    model.to("cuda")
-    model.eval()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    s = torch.load("sac+logos+ava1-l14-linearMSE.pth", map_location=device)
+
+    model.load_state_dict(s)
+    model.to(device)
+    model.eval()
+
     model2, preprocess = clip.load("ViT-L/14", device=device)
 
     model_dict = {}
@@ -82,8 +84,14 @@ def predict(image):
     image_input = model_dict['clip_preprocess'](image).unsqueeze(0).to(model_dict['device'])
     with torch.no_grad():
         image_features = model_dict['clip_model'].encode_image(image_input)
-        im_emb_arr = normalized(image_features.detach().cpu().numpy())
-        prediction = model_dict['classifier'](torch.from_numpy(im_emb_arr).to(model_dict['device']).type(torch.cuda.FloatTensor))
+        if model_dict['device'] == 'cuda':
+            im_emb_arr = normalized(image_features.detach().cpu().numpy())
+            im_emb = torch.from_numpy(im_emb_arr).to(model_dict['device']).type(torch.cuda.FloatTensor)
+        else:
+            im_emb_arr = normalized(image_features.detach().numpy())
+            im_emb = torch.from_numpy(im_emb_arr).to(model_dict['device']).type(torch.FloatTensor)
+
+        prediction = model_dict['classifier'](im_emb)
     score = prediction.item()
 
     return {'aesthetic score': score}
@@ -101,8 +109,25 @@ if __name__ == '__main__':
 
     title = 'image aesthetic predictor'
 
-    gr.Interface(predict,
-                 inputs,
-                 outputs,
-                 title=title,
-                 ).launch()
+    examples = ['example1.jpg', 'example2.jpg', 'example3.jpg']
+
+    description = """
+    # Image Aesthetic Predictor Demo
+    This model (Image Aesthetic Predictor) is trained by LAION Team. See [https://github.com/christophschuhmann/improved-aesthetic-predictor](https://github.com/christophschuhmann/improved-aesthetic-predictor)
+    1. This model is desgined by adding five MLP layers on top of (frozen) CLIP ViT-L/14 and only the MLP layers are fine-tuned with a lot of images by a regression loss term such as MSE and MAE.
+    2. Output is bounded from 0 to 10. The higher the better.
+    """
+
+    article = "<p style='text-align: center'><a href='https://laion.ai/blog/laion-aesthetics/'>LAION aeshetics blog post</a></p>"
+
+    with gr.Blocks() as demo:
+        gr.Markdown(description)
+        with gr.Row():
+            with gr.Column():
+                image_input = gr.Image(type='pil', label='Input image')
+                submit_botton = gr.Button('Submit')
+            json_output = gr.JSON(label='Output')
+        submit_botton.click(predict, inputs=image_input, outputs=json_output)
+        gr.Examples(examples=examples, inputs=image_input)
+        gr.HTML(article)
+    demo.launch()
