@@ -118,7 +118,7 @@ if __name__ == '__main__':
     2. Output is bounded from 0 to 10. The higher the better.
     """
 
-    article = "<p style='text-align: center'><a href='https://laion.ai/blog/laion-aesthetics/'>LAION aeshetics blog post</a></p>"
+    article = "<p style='text-align: center'><a href='https://laion.ai/blog/laion-aesthetics/'>LAION aesthetics blog post</a></p>"
 
     with gr.Blocks() as demo:
         gr.Markdown(description)
