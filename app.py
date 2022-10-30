@@ -125,9 +125,9 @@ if __name__ == '__main__':
         with gr.Row():
             with gr.Column():
                 image_input = gr.Image(type='pil', label='Input image')
-                submit_botton = gr.Button('Submit')
+                submit_button = gr.Button('Submit')
             json_output = gr.JSON(label='Output')
-        submit_botton.click(predict, inputs=image_input, outputs=json_output)
+        submit_button.click(predict, inputs=image_input, outputs=json_output)
         gr.Examples(examples=examples, inputs=image_input)
         gr.HTML(article)
     demo.launch()
